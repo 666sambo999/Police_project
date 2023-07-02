@@ -1,10 +1,12 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
 #include<iostream>
+#include<fstream>
 #include<string>
 #include<ctime>
 #include<map>
 #include<list>
 #include<Windows.h>
+#include<conio.h>
 
 using namespace std;
 using std::cout;
@@ -54,6 +56,11 @@ public:
 		datatime[strlen(datatime) - 1] = 0;
 		return datatime;
 	}
+	time_t get_timestamp()const
+	{
+		tm datatime = this->datatime;
+		return mktime(&datatime);
+	}
 	const std::string get_place()const
 	{
 		return place;
@@ -85,12 +92,12 @@ public:
 		this->datatime = *init_datatime();
 	}
 	// Перегрузка datatime
-	void set_datatime(const std::string& datatime)// принимаем строку дату и время 
+	void set_datatime(const std::string& s_datatime)// принимаем строку дату и время 
 	{
 		this->datatime = tm{};
 		const int SIZE = 32;
 		char buffer[SIZE]{};
-		strcpy(buffer, datatime.c_str());
+		strcpy(buffer, s_datatime.c_str());
 		// метод c_str()const, который возврящает указатель на RAW - строку, 
 		// которую обварачивает объект класса std::string
 		int part[5] = {};
@@ -104,6 +111,7 @@ public:
 		this->datatime.tm_hour = part[3];
 		this->datatime.tm_min = part[4];
 		this->datatime = *init_datatime();
+		//return mktime(&datatime);
 	}
 	void set_place(const std::string& place)
 	{
@@ -130,6 +138,18 @@ std::ostream& operator <<(std::ostream& os, const Crime& obj)
 	os << "\t" << violation.at(obj.get_id());
 	return os;
 }
+std::ofstream& operator <<(std::ofstream& ofs, const Crime& obj)
+{
+	ofs << obj.get_timestamp() << " "; 
+	ofs << obj.get_id() << " ";
+	ofs << obj.get_place(); 
+	return ofs;
+}
+
+void print(const std::map <std::string, std::list<Crime>>& base);
+void save(const std::map <std::string, std::list<Crime>>& base, const std::string& filename);
+void load(std::map <std::string, std::list<Crime>>& base, const std::string& filename);
+
 
 void main()
 {
@@ -179,17 +199,77 @@ void main()
 			"е777хк174", std::list<Crime>
 			{
 				Crime(10,"2023.06.27 03.25", "ул.Ворошилова"),
-				Crime(8,"2023.06.26 03.30", "ул.Ворошилова"),
+				Crime(8,"2023.06.26 03.30", "ул.Московская"),
 			}
 		},
 	};
-	for (std::map<std::string, std::list<Crime>>::iterator it = base.begin(); it != base.end(); ++it)
+
+	char key;
+	do
 	{
+		cout << "1. Распечатка базы данных;" << endl; 
+		cout << "2. Распечатка базы по заданному номеру;" << endl; 
+		cout << "3. Распечатка базы по диапозону номеру;" << endl; 
+		cout << "4. Сохранение базы в файл;" << endl; 
+		cout << "5. Загрузка базы из файла;" << endl; 
+		cout << "0. Выход из программы;" << endl; 
+		key = _getch();
+		switch (key)
+		{
+		case '1': print(base);	break;
+		case '4': save(base, "base.txt"); break;
+		}
+	} while (key!=27&& key !=0);
+	save(base, "base.txt");
+	//print(base);
+}
+
+void print(const std::map < std::string, std::list<Crime>>& base)
+{
+	for (std::map<std::string, std::list<Crime>>::const_iterator it = base.begin(); it != base.end(); ++it)
+	{
+		cout.width(8);
 		cout << it->first << ":\n";
-		for (std::list<Crime>::iterator l_it = it->second.begin(); l_it != it->second.end(); ++l_it)
+		for (std::list<Crime>::const_iterator l_it = it->second.begin(); l_it != it->second.end(); ++l_it)
 		{
 			cout << " \t|" << *l_it << endl;
 		}
 		cout << delimeter << endl;
+	}
+}
+
+void save(const std::map <std::string, std::list<Crime>>& base, const std::string& filename)
+{
+	std::ofstream fout(filename);
+	for (std::map<std::string, std::list<Crime>>::const_iterator it = base.begin(); it != base.end(); ++it)
+	{
+		
+		fout << it->first << ":\t";
+		for (std::list<Crime>::const_iterator l_it = it->second.begin(); l_it != it->second.end(); ++l_it)
+		{
+			fout << *l_it << ", ";
+		}
+		fout << endl; 
+	}
+	fout.close();
+	std::string command = "start notepad " + filename;
+	system(command.c_str());
+}
+
+void load(std::map <std::string, std::list<Crime>>& base, const std::string& filename)
+{
+	std::ifstream fin(filename);
+	if (fin.is_open())
+	{
+		// Todo: read to file
+		while (!fin.eof())
+		{
+
+		}
+		fin.close();
+	}
+	else
+	{
+		std::cerr << "Error: file not found" << endl; 
 	}
 }
