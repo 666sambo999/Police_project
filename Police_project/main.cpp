@@ -27,7 +27,7 @@ std::map<int, std::string> violation =
 	{7,"Ремень безопастности"},
 	{8,"Отсутствие документов и страховки"},
 	{9,"Опасная езда на авто"},
-	{10,"Оскрбление полицейского"},
+	{10,"Оскорбление полицейского"},
 	{11,"Дрифт на перекрестке"},
 
 };
@@ -39,8 +39,8 @@ class Crime
 {
 	//std::string licence_plate;	// номерной знак 
 	int id;						// правонарушения 
-	tm datatime;				// время правонарушения 
-	string place;				// место нарушения 
+	tm datetime;				// время правонарушения 
+	std::string place;				// место нарушения 
 public:
 	/*const std::string& get_licence_plate()const
 	{
@@ -52,16 +52,16 @@ public:
 	}
 	const char* get_time()const
 	{
-		char* datatime = asctime(&this->datatime);
-		datatime[strlen(datatime) - 1] = 0;
-		return datatime;
+		char* datetime = asctime(&this->datetime);
+		datetime[strlen(datetime) - 1] = 0;
+		return datetime;
 	}
 	time_t get_timestamp()const
 	{
-		tm datatime = this->datatime;
-		return mktime(&datatime);
+		tm datetime = this->datetime;
+		return mktime(&datetime);
 	}
-	const std::string get_place()const
+	const std::string& get_place()const
 	{
 		return place;
 	}
@@ -76,28 +76,32 @@ public:
 		else this->id = 0;*/
 		this->id = violation.find(id) == violation.end() ? 0 : id;
 	}
-	tm* init_datatime()//  преобразуем в time штамп
+	void set_timestamp(time_t time)
 	{
-		const time_t datatime = mktime(&this->datatime);
-		return localtime(&datatime);
+		datetime = *localtime(&time);
 	}
-	void set_datatime(int year, int month, int day, int hour, int minute)
+	tm* init_datetime()//  преобразуем в timestamp
 	{
-		this->datatime = tm{};
-		datatime.tm_year = year - 1900;
-		datatime.tm_mon = month - 1;
-		datatime.tm_mday = day;
-		datatime.tm_hour = hour;
-		datatime.tm_min = minute;
-		this->datatime = *init_datatime();
+		const time_t datetime = mktime(&this->datetime);
+		return localtime(&datetime);
 	}
-	// Перегрузка datatime
-	void set_datatime(const std::string& s_datatime)// принимаем строку дату и время 
+	void set_datetime(int year, int month, int day, int hour, int minute)
 	{
-		this->datatime = tm{};
+		this->datetime = tm{};
+		datetime.tm_year = year - 1900;
+		datetime.tm_mon = month - 1;
+		datetime.tm_mday = day;
+		datetime.tm_hour = hour;
+		datetime.tm_min = minute;
+		this->datetime = *init_datetime();
+	}
+	// Перегрузка datetime
+	void set_datetime(const std::string& datetime)// принимаем строку дату и время 
+	{
+		this->datetime = tm{};
 		const int SIZE = 32;
 		char buffer[SIZE]{};
-		strcpy(buffer, s_datatime.c_str());
+		strcpy(buffer, datetime.c_str());
 		// метод c_str()const, который возврящает указатель на RAW - строку, 
 		// которую обварачивает объект класса std::string
 		int part[5] = {};
@@ -105,13 +109,13 @@ public:
 		int n = 0;
 		for (char* pch = strtok(buffer, delimeters); pch; pch = strtok(NULL, delimeters))
 			part[n++] = std::stoi(pch);
-		this->datatime.tm_year = part[0] - 1900;
-		this->datatime.tm_mon = part[1] - 1;
-		this->datatime.tm_mday = part[2];
-		this->datatime.tm_hour = part[3];
-		this->datatime.tm_min = part[4];
-		this->datatime = *init_datatime();
-		//return mktime(&datatime);
+		this->datetime.tm_year = part[0] - 1900;
+		this->datetime.tm_mon = part[1] - 1;
+		this->datetime.tm_mday = part[2];
+		this->datetime.tm_hour = part[3];
+		this->datetime.tm_min = part[4];
+		this->datetime = *init_datetime();
+		
 	}
 	void set_place(const std::string& place)
 	{
@@ -119,11 +123,11 @@ public:
 	}
 	// конструкторы 
 	//Crime(const std::string& licence_plate, int id, const std::string& datatime, const std::string& place)
-	Crime(int id, const std::string& datatime, const std::string& place)
+	Crime(int id, const std::string& datetime, const std::string& place)
 	{
 		//set_licence_plate(licence_plate);
 		set_id(id);
-		set_datatime(datatime);
+		set_datetime(datetime);
 		set_place(place);
 	}
 	~Crime() {}
@@ -131,10 +135,10 @@ public:
 std::ostream& operator <<(std::ostream& os, const Crime& obj)
 {
 	//return os << obj.get_licence_plate() << " " << obj.get_id() << " " << obj.get_time() << " " << obj.get_place();
-	os << " " << obj.get_time() << "|";
-	os.width(20);
+	os << obj.get_time() << " | ";
+	os.width(25);
 	os << std::left;
-	os << obj.get_place() << "|";
+	os << obj.get_place() << " | ";
 	os << "\t" << violation.at(obj.get_id());
 	return os;
 }
@@ -144,6 +148,52 @@ std::ofstream& operator <<(std::ofstream& ofs, const Crime& obj)
 	ofs << obj.get_id() << " ";
 	ofs << obj.get_place(); 
 	return ofs;
+}
+
+std::istream& operator>>(std::istream& is, Crime& obj)
+{
+	int id;
+	std::string date;
+	std::string time;
+	std::string place;
+	cout << "Введите нарушение: "; is >> id;
+	is.ignore();
+	cout << R"(
+		0 - Ввести время вручную;\n
+		1 - Использовать текущее время;
+	)";
+	bool current_time;
+	cin >> current_time;
+	if (current_time)
+	{
+		obj.set_timestamp(std::time(NULL));
+		is.ignore();
+	}
+	else
+	{
+		std::getline(is, date, ' ');
+		std::getline(is, time, ' ');
+		obj.set_datetime(date + " " + time);
+	}
+	cout << "Введите место проишествия: ";
+	SetConsoleCP(1251);
+	std::getline(is, place);
+	SetConsoleCP(866);
+	obj.set_id(id);
+	obj.set_place(place);
+	return is;
+}
+
+std::ifstream& operator >> (std::ifstream& ifs, Crime& obj)
+{
+	int id; 
+	time_t timestamp;
+	std::string place;
+	ifs >> id >> timestamp;
+	std::getline(ifs, place, ',');
+	obj.set_id(id);
+	obj.set_timestamp(timestamp);
+	return ifs; 
 }
 
 void print(const std::map <std::string, std::list<Crime>>& base);
@@ -157,6 +207,7 @@ void main()
 
 	/*Crime crime("a777аa196", 1, "2023.06.29 20.21", "ул. Ленина");
 	cout << crime << endl;*/
+	
 	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleDisplayMode(hConsole, CONSOLE_FULLSCREEN_MODE, NULL);
 
@@ -207,24 +258,31 @@ void main()
 	char key;
 	do
 	{
+		system("CLS");
 		cout << "1. Распечатка базы данных;" << endl; 
 		cout << "2. Распечатка базы по заданному номеру;" << endl; 
 		cout << "3. Распечатка базы по диапозону номеру;" << endl; 
 		cout << "4. Сохранение базы в файл;" << endl; 
 		cout << "5. Загрузка базы из файла;" << endl; 
-		cout << "0. Выход из программы;" << endl; 
+		cout << "6. Добавление записи в базу;" << endl; 
 		key = _getch();
 		switch (key)
 		{
 		case '1': print(base);	break;
 		case '4': save(base, "base.txt"); break;
+		case '6': 
+			for (std::pair<int, std::string> i : violation)cout << "\t" << i.first << "\t" << i.second << endl;
+			std::string licence_plate;
+			Crime crime(0,"2010.01.01 00:00", "Somewere");
+			cout << "Введите номер автомобиля: "; cin >> licence_plate;
+			cout << "Введие правонарушения: "; cin >> crime;
+			base[licence_plate].push_back(crime);
 		}
 	} while (key!=27&& key !=0);
-	save(base, "base.txt");
-	//print(base);
+	
 }
 
-void print(const std::map < std::string, std::list<Crime>>& base)
+void print(const std::map <std::string, std::list<Crime>>& base)
 {
 	for (std::map<std::string, std::list<Crime>>::const_iterator it = base.begin(); it != base.end(); ++it)
 	{
@@ -236,6 +294,7 @@ void print(const std::map < std::string, std::list<Crime>>& base)
 		}
 		cout << delimeter << endl;
 	}
+	system("PAUSE");
 }
 
 void save(const std::map <std::string, std::list<Crime>>& base, const std::string& filename)
@@ -243,7 +302,6 @@ void save(const std::map <std::string, std::list<Crime>>& base, const std::strin
 	std::ofstream fout(filename);
 	for (std::map<std::string, std::list<Crime>>::const_iterator it = base.begin(); it != base.end(); ++it)
 	{
-		
 		fout << it->first << ":\t";
 		for (std::list<Crime>::const_iterator l_it = it->second.begin(); l_it != it->second.end(); ++l_it)
 		{
