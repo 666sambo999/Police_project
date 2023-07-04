@@ -216,7 +216,7 @@ void main()
 	/*Crime crime("a777àa196", 1, "2023.06.29 20.21", "óë. Ëåíèíà");
 	cout << crime << endl;*/
 
-	std::map<std::string, std::list<Crime>> base =
+	std::map<std::string, std::list<Crime>> base/* =
 	{
 		{
 			"a666aa196", std::list<Crime>
@@ -253,7 +253,7 @@ void main()
 				Crime(8,"2023.06.26 03.30", "ул.Московская"),
 			}
 		},
-	};
+	}*/;
 
 	char key;
 	do
@@ -270,6 +270,7 @@ void main()
 		{
 		case '1': print(base);	break;
 		case '4': save(base, "base.txt"); break;
+		case '5': load(base, "base.txt"); break;
 		case '6': 
 			for (std::pair<int, std::string> i : violation)cout << "\t" << i.first << "\t" << i.second << endl;
 			std::string licence_plate;
@@ -277,6 +278,7 @@ void main()
 			cout << "Введите номер автомобиля: "; cin >> licence_plate;
 			cout << "Введие правонарушения: "; cin >> crime;
 			base[licence_plate].push_back(crime);
+			break;
 		}
 	} while (key!=27&& key !=0);
 	
@@ -322,7 +324,30 @@ void load(std::map <std::string, std::list<Crime>>& base, const std::string& fil
 		// Todo: read to file
 		while (!fin.eof())
 		{
-
+			std::string licence_plate; 
+			std::string all_crimes;
+			std::getline(fin, licence_plate, ':');
+			fin.ignore(); // пропускаем двоеточие 
+			std::getline(fin, all_crimes);
+			int all_crimes_size = all_crimes.size()+1;
+			char* sz_all_crimes = new char[all_crimes_size] {};
+			std::strcpy(sz_all_crimes, all_crimes.c_str());
+			Crime crime(0, "2000.01.01 00:00", "");
+			for (char* pch = strtok(sz_all_crimes, ","); pch; pch = strtok(NULL, ","))
+			{
+				//elements[n++] = pch;
+				if (strcmp(pch, " ") == 0)continue;
+				time_t timestamp = std::stoi(pch);
+				while (pch[0] == ' ')for (int i = 0; pch[i]; i++)pch[i] = pch[i + 1];
+				pch = strchr(pch, ' ') + 1;
+				int id = std::stoi(pch);
+				pch = strchr(pch, ' ') + 1;
+				crime.set_id(id);
+				crime.set_timestamp(timestamp);
+				crime.set_place(pch);
+				base[licence_plate].push_back(crime);
+			}
+			delete[] sz_all_crimes;
 		}
 		fin.close();
 	}
@@ -330,4 +355,6 @@ void load(std::map <std::string, std::list<Crime>>& base, const std::string& fil
 	{
 		std::cerr << "Error: file not found" << endl; 
 	}
+	cout << "База загружена" << endl; 
+	system("PAUSE");
 }
