@@ -159,7 +159,7 @@ std::istream& operator>>(std::istream& is, Crime& obj)
 	cout << "Введите нарушение: "; is >> id;
 	is.ignore();
 	cout << R"(
-		0 - Ввести время вручную;\n
+		0 - Ввести время вручную;
 		1 - Использовать текущее время;
 	)";
 	bool current_time;
@@ -255,6 +255,8 @@ void main()
 		},
 	}*/;
 
+	load(base, "base.txt");
+
 	char key;
 	do
 	{
@@ -265,23 +267,64 @@ void main()
 		cout << "4. Сохранение базы в файл;" << endl; 
 		cout << "5. Загрузка базы из файла;" << endl; 
 		cout << "6. Добавление записи в базу;" << endl; 
+		cout << "0. Выход из базы данных;" << endl; 
 		key = _getch();
 		switch (key)
 		{
 		case '1': print(base);	break;
+		case '2': 
+		{
+			std::string licence_plate;
+			std::cout << "Введите номер автомобиля: "; cin >> licence_plate;
+			try
+			{
+				for (std::list<Crime>::iterator it = base.at(licence_plate).begin(); it != base.at(licence_plate).end(); ++it)
+					cout << *it << endl; 
+			}
+			catch (const std::exception& e)
+			{
+				std::cerr << "В базе нет такого номера " << endl; 
+			}
+			system("PAUSE");
+		}
+		break;
+		case'3':
+		{
+			std::string licence_plate_1;
+			std::string licence_plate_2;
+			cout << "Введите начальный номер: "; cin >> licence_plate_1;
+			cout << "Введите конечный номер: "; cin >> licence_plate_2;
+			for (std::map<std::string, std::list<Crime>>::iterator it = base.lower_bound(licence_plate_1);
+				it != base.upper_bound(licence_plate_2); ++it)
+			{
+				cout << it->first << "\n";
+				for (std::list<Crime>::iterator c_it = it->second.begin(); c_it != it->second.end(); ++c_it)
+				{
+					cout << "\t" << *c_it << endl;
+				}
+			}
+		}
+			break;
 		case '4': save(base, "base.txt"); break;
 		case '5': load(base, "base.txt"); break;
 		case '6': 
-			for (std::pair<int, std::string> i : violation)cout << "\t" << i.first << "\t" << i.second << endl;
-			std::string licence_plate;
-			Crime crime(0,"2010.01.01 00:00", "Somewere");
-			cout << "Введите номер автомобиля: "; cin >> licence_plate;
-			cout << "Введие правонарушения: "; cin >> crime;
-			base[licence_plate].push_back(crime);
-			break;
+			{
+				for (std::pair<int, std::string> i : violation)cout << "\t" << i.first << "\t" << i.second << endl;
+				std::string licence_plate;
+				Crime crime(0,"2010.01.01 00:00", "Somewere");
+				cout << "Введите номер автомобиля: "; cin >> licence_plate;
+				cout << "Введие правонарушения: "; cin >> crime;
+				base[licence_plate].push_back(crime);
+				break;
+			}
 		}
-	} while (key!=27&& key !=0);
-	
+	} while (key!=27&& key != '0');
+	cout << "Сохранить базу? y/n" << endl; 
+	key = _getch();
+	if (key == 'y' || key == 'Y'|| key == 'н'||key == 'Н')
+	{
+		save(base, "base.txt");
+	}
 }
 
 void print(const std::map <std::string, std::list<Crime>>& base)
@@ -318,6 +361,7 @@ void save(const std::map <std::string, std::list<Crime>>& base, const std::strin
 
 void load(std::map <std::string, std::list<Crime>>& base, const std::string& filename)
 {
+	base.clear();
 	std::ifstream fin(filename);
 	if (fin.is_open())
 	{
